@@ -12,11 +12,11 @@ D = sc.loadobj('results/rapid_data.obj')
 R = sc.loadobj('results/rapid_results.obj')
 
 
-def dalys_fig(level=1, label=''):
+def dalys_fig(label='', region=None, income=None):
     sc.heading('DALYs figure')
-    if   level == 1: colname = 'Category 1'
-    elif level == 2: colname = 'Category 2'
-    interv_category = interv_data[colname].tolist()
+    category1 = interv_data['Category 1'].tolist()
+    category2 = interv_data['Category 2'].tolist()
+    interv_category = [c1+': '+c2 for c1,c2 in zip(category1, category2)]
     categories = sorted(set(interv_category))
     ncategories = len(categories)
     nspends, nintervs = R[0]['dalys'].shape
@@ -27,33 +27,69 @@ def dalys_fig(level=1, label=''):
                 mapping.append(c)
     
     dalydata = pl.zeros((nspends, ncategories))
-    for country in R.keys():
-        dalys = R[country]['dalys']
-        for i in range(nintervs):
-            c = mapping[i]
-            dalydata[:,c] += dalys[:,i]
+    for co,country in enumerate(R.keys()):
+        proceed = True
+        if region and country_data['who_region',co] != region:
+            proceed = False # Could use continue
+        if income and country_data['income_group',co] != income:
+            proceed = False # Could use continue
+        if proceed:
+            dalys = R[country]['dalys']
+            for i in range(nintervs):
+                c = mapping[i]
+                dalydata[:,c] += dalys[:,i]
     
-    fig = pl.figure()
+    fig = pl.figure(figsize=(10,8))
     x = pl.arange(nspends)
     axlist = []
     previous = pl.zeros(nspends)
+    
+    colors = [(0.5, 0.5, 0.0),
+              (0.9, 0.5, 0.0),
+              
+              (0.6, 0.0, 0.6),
+              (0.7, 0.1, 0.6),
+              (0.8, 0.2, 0.6),
+              (0.9, 0.3, 0.6),
+              
+              (0.0, 0.0, 0.3),
+              (0.0, 0.1, 0.4),
+              (0.0, 0.2, 0.5),
+              (0.0, 0.3, 0.6),
+              (0.0, 0.4, 0.7),
+              (0.0, 0.5, 0.8),
+              (0.0, 0.6, 0.9),
+              
+              (0.0, 0.5, 0.2),
+              (0.0, 0.6, 0.3),
+              (0.0, 0.7, 0.4),
+              (0.0, 0.8, 0.5),
+              (0.0, 0.9, 0.6),
+            ]
+    colors = colors[::-1]
+    
     for c in range(len(categories)):
-        current = dalydata[:,c]/1e9
-        ax = pl.bar(x, current, bottom=previous)
+        current = dalydata[:,c]/1e6
+        ax = pl.bar(x, current, bottom=previous, facecolor=colors[c])
         previous += current
         axlist.append(ax)
+        
+    
     
     xticks = ['$%s' % val for val in [0.1, 0.3, 1, 3, 10, 30, 100, 300, '1k', '3k', '10k']]
-    pl.ylabel('DALYs averted (billions)')
-    pl.title('Global DALYs averted annually by funding level and disease area')
+    pl.ylabel('DALYs averted (millions)')
+    titletext = 'DALYs averted annually by funding level and disease area'
+    if label: titletext += ': ' + label
+    pl.title(titletext)
     pl.xticks(x, xticks)
     pl.xlabel('EUHC expenditure per person per year globally')
-    pl.legend([ax[0] for ax in axlist], categories)
+    pl.legend([ax[0] for ax in axlist][::-1], categories[::-1])
     
     pl.show()
     
     if dosave:
-        pl.savefig(f'results/rapid_dalys-averted-{label}.png', dpi=200)
+        connector = '' if not label else '-'
+        pl.savefig(f'results/rapid_dalys-averted{connector}{label}.png', dpi=200)
     return fig
 
 
@@ -157,8 +193,11 @@ if fig2:
     
 #%% Fig. 1 -- DALYs
 if fig1:
-    dalys_fig(level=1, label='level1')
-    dalys_fig(level=2, label='level2')
+    dalys_fig(label='Global')
+    dalys_fig(region='EUR', label='Europe')
+    dalys_fig(region='AFR', label='Africa')
+    dalys_fig(income='Low income', label='Low-income')
+    dalys_fig(income='High income', label='High-income')
 
 
 
