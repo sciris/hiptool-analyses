@@ -30,9 +30,7 @@ baseline_factor = country_data.findrow('Zambia', asdict=True)['icer_multiplier']
 # Replace with actual burden data
 for k,key in enumerate(['DALYs', 'Deaths', 'Prevalence']):
     for b,burden in enumerate(P.burden().data['Cause'].tolist()):
-        this = bod_data[country][k][burden]
-        P.burden().data[key][b] = this
-        print(this)
+        P.burden().data[key, b] = bod_data[country][k][burden]
 
 # Adjust interventions
 c = country_data['name'].tolist().index(country)
