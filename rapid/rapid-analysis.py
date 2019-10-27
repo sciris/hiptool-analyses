@@ -32,8 +32,8 @@ for c,country in enumerate(country_data['name'].tolist()):
     
     # Replace with actual burden data
     for k,key in enumerate(['DALYs', 'Deaths', 'Prevalence']):
-        for c,cause in enumerate(D[country].burden().data['Cause'].tolist()):
-            D[country].burden().data[key][c] = bod_data[country][k][cause]
+        for b,burden in enumerate(D[country].burden().data['Cause'].tolist()):
+            D[country].burden().data[key][b] = bod_data[country][k][burden]
     
     # Adjust interventions
     for key in ['Unit cost', 'ICER']:
