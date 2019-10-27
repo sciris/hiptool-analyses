@@ -2,8 +2,9 @@ import pylab as pl
 import sciris as sc
 
 dosave = True
-fig1 = True
-fig2 = False
+fig1 = 0
+fig2 = 1
+fig3 = 0
 
 sc.heading('Loading data...')
 country_data = sc.loadspreadsheet('country-data.xlsx')
@@ -74,8 +75,6 @@ def dalys_fig(label='', region=None, income=None):
         previous += current
         axlist.append(ax)
         
-    
-    
     xticks = ['$%s' % val for val in [0.1, 0.3, 1, 3, 10, 30, 100, 300, '1k', '3k', '10k']]
     pl.ylabel('DALYs averted (millions)')
     titletext = 'DALYs averted annually by funding level and disease area'
@@ -93,8 +92,99 @@ def dalys_fig(label='', region=None, income=None):
     return fig
 
 
-#%% Fig. 2 -- interventions
-if fig2:
+
+def alloc_fig(label='', region=None, income=None, byplatform=False):
+    sc.heading('Allocation figure')
+    if not byplatform:
+        category1 = interv_data['Category 1'].tolist()
+        category2 = interv_data['Category 2'].tolist()
+        iter_category = [c1+': '+c2 for c1,c2 in zip(category1, category2)]
+    else:
+        iter_category = interv_data['Platform'].tolist()
+    categories = sorted(set(iter_category))
+    ncategories = len(categories)
+    nspends, nintervs = R[0]['alloc'].shape
+    mapping = []
+    for i_c in iter_category:
+        for c,cat in enumerate(categories):
+            if i_c == cat:
+                mapping.append(c)
+    
+    allocdata = pl.zeros((nspends, ncategories))
+    for co,country in enumerate(R.keys()):
+        proceed = True
+        if region and country_data['who_region',co] != region:
+            proceed = False # Could use continue
+        if income and country_data['income_group',co] != income:
+            proceed = False # Could use continue
+        if proceed:
+            alloc = R[country]['alloc']
+            for i in range(nintervs):
+                c = mapping[i]
+                allocdata[:,c] += alloc[:,i]
+    
+    fig = pl.figure(figsize=(10,8))
+    ax = fig.add_axes([0.08, 0.08, 0.65, 0.85])
+    x = pl.arange(nspends)
+    axlist = []
+    previous = pl.zeros(nspends)
+    
+    if not byplatform:
+        colors = [(0.5, 0.5, 0.0),
+                  (0.9, 0.5, 0.0),
+                  
+                  (0.6, 0.0, 0.6),
+                  (0.7, 0.1, 0.6),
+                  (0.8, 0.2, 0.6),
+                  (0.9, 0.3, 0.6),
+                  
+                  (0.0, 0.0, 0.3),
+                  (0.0, 0.1, 0.4),
+                  (0.0, 0.2, 0.5),
+                  (0.0, 0.3, 0.6),
+                  (0.0, 0.4, 0.7),
+                  (0.0, 0.5, 0.8),
+                  (0.0, 0.6, 0.9),
+                  
+                  (0.0, 0.5, 0.2),
+                  (0.0, 0.6, 0.3),
+                  (0.0, 0.7, 0.4),
+                  (0.0, 0.8, 0.5),
+                  (0.0, 0.9, 0.6),
+                ]
+        colors = colors[::-1]
+    else:
+        colors = sc.vectocolor(len(categories))
+    
+    for c in range(len(categories)):
+        current = allocdata[:,c]/allocdata.sum(axis=1)*100
+        ax = pl.bar(x, current, bottom=previous, facecolor=colors[c])
+        previous += current
+        axlist.append(ax)
+        
+    xticks = ['$%s' % val for val in [0.1, 0.3, 1, 3, 10, 30, 100, 300, '1k', '3k', '10k']]
+    pl.ylabel('Allocation (%)')
+    if not byplatform:
+        titletext = 'Spending annually by funding level and disease area'
+    else:
+        titletext = 'Spending annually by funding level and platform'
+    if label: titletext += ': ' + label
+    pl.title(titletext)
+    pl.xticks(x, xticks)
+    pl.xlabel('EUHC expenditure per person per year globally')
+    pl.legend([ax[0] for ax in axlist][::-1], categories[::-1], bbox_to_anchor=(1,0.8))
+    
+    pl.show()
+    
+    if dosave:
+        connector = '' if not label else '-'
+        pl.savefig(f'results/rapid_alloc{connector}{label}.png', dpi=200)
+    return fig
+
+
+
+#%% Fig. 3 -- interventions
+if fig3:
     sc.heading('Top interventions figure')
     df = sc.dataframe(cols=['Short name', 'Category 1', 'Category 2', 'Percent'], nrows=len(interv_data))
     for key in ['Short name', 'Category 1', 'Category 2']:
@@ -199,6 +289,13 @@ if fig1:
     dalys_fig(income='Low income', label='Low-income')
     dalys_fig(income='High income', label='High-income')
 
+if fig2:
+    alloc_fig(label='Global')
+    alloc_fig(label='platforms', byplatform=True)
+#    alloc_fig(region='EUR', label='Europe')
+#    alloc_fig(region='AFR', label='Africa')
+#    alloc_fig(income='Low income', label='Low-income')
+#    alloc_fig(income='High income', label='High-income')
 
 
 
