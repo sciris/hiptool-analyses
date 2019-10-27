@@ -43,7 +43,7 @@ for key in ['Unit cost', 'ICER']:
             df.rmrows(missing_inds)
         elif missing_data == 'assumption':
             for ind in missing_inds:
-                df['Unit cost', ind] = 10000 # 10000.0 # WARNING, completely arbitrary!
+                df['Unit cost', ind] = 1000 # 10000.0 # WARNING, completely arbitrary!
                 df['ICER', ind] = 1000# 660000
     
     P.interv().data[key] *= this_factor/baseline_factor

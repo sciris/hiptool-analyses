@@ -45,8 +45,8 @@ for c,country in enumerate(country_data['name'].tolist()):
                 df.rmrows(missing_inds)
             elif missing_data == 'assumption':
                 for ind in missing_inds:
-                    df['Unit cost', ind] = 1# 10000.0 # WARNING, completely arbitrary!
-                    df['ICER', ind] = 1# 660000
+                    df['Unit cost', ind] = 10 # 10000.0 # WARNING, completely arbitrary!
+                    df['ICER', ind] = 1000 # 660000
         
         D[country].interv().data[key] *= this_factor/baseline_factor
 
