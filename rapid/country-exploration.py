@@ -16,7 +16,7 @@ dosave = False # Whether or not to save an example data file
 doplot = True # Whether or not to plot
 
 country = 'Zambia'
-spend = 1.0 # Per person spending
+spend = 0.1 # Per person spending
 missing_data = ['remove', 'assumption'][1] # Choose how to handle missing data
 
 P = hp.Project()
@@ -68,9 +68,9 @@ df.sort(col='shortname')
 if doplot:
 #    P.burden().plot()
 #    fig1 = P.package().plot_spending(which='current')
-#    fig2 = P.package().plot_spending(which='optimized')
+    fig2 = P.package().plot_spending(which='optimized')
 #    fig3 = P.package().plot_dalys(which='current')
-#    fig4 = P.package().plot_dalys(which='optimized')
+    fig4 = P.package().plot_dalys(which='optimized')
     fig5 = P.package().plot_cascade(cutoff=100e3)
     pl.show()
     
