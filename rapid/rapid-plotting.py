@@ -12,10 +12,11 @@ D = sc.loadobj('results/rapid_data.obj')
 R = sc.loadobj('results/rapid_results.obj')
 
 
-#%% Fig. 1 -- DALYs
-if fig1:
+def dalys_fig(level=1, label=''):
     sc.heading('DALYs figure')
-    interv_category = interv_data['Category 1'].tolist()
+    if   level == 1: colname = 'Category 1'
+    elif level == 2: colname = 'Category 2'
+    interv_category = interv_data[colname].tolist()
     categories = sorted(set(interv_category))
     ncategories = len(categories)
     nspends, nintervs = R[0]['dalys'].shape
@@ -52,7 +53,8 @@ if fig1:
     pl.show()
     
     if dosave:
-        pl.savefig('results/rapid_dalys-averted.png', dpi=200)
+        pl.savefig(f'results/rapid_dalys-averted-{label}.png', dpi=200)
+    return fig
 
 
 #%% Fig. 2 -- interventions
@@ -152,6 +154,12 @@ if fig2:
         pl.savefig('results/rapid_top-interventions.png', dpi=200)
         
     
+    
+#%% Fig. 1 -- DALYs
+if fig1:
+    dalys_fig(level=1, label='level1')
+    dalys_fig(level=2, label='level2')
+
 
 
 
