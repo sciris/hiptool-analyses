@@ -3,7 +3,7 @@ import sciris as sc
 
 dosave = True
 fig1 = True
-fig2 = True
+fig2 = False
 
 sc.heading('Loading data...')
 country_data = sc.loadspreadsheet('country-data.xlsx')
