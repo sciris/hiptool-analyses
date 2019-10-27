@@ -2,8 +2,8 @@ import pylab as pl
 import sciris as sc
 
 dosave = True
-fig1 = 1
-fig2 = 1
+fig1 = 0
+fig2 = 0
 fig3 = 1
 
 sc.heading('Loading data...')
@@ -202,7 +202,7 @@ def alloc_fig(label='', region=None, income=None, byplatform=False, logscale=Fal
 
 
 #%% Fig. 3 -- interventions
-def common_interventions(region=None, income=None, byplatform=False, max_entries=10, label=''):
+def common_interventions(region=None, income=None, byplatform=False, max_entries=10, entry=None, label=''):
     sc.heading('Top interventions figure')
     if not byplatform:
         category_list = interv_data['Category 1'].tolist()
@@ -231,7 +231,11 @@ def common_interventions(region=None, income=None, byplatform=False, max_entries
         if proceed:
             alloc = R[country]['alloc']
             counts = pl.array(alloc>0, dtype=float)
-            for i in range(nspends):
+            if entry is None:
+                entries = range(nspends)
+            else:
+                entries = [entry]
+            for i in entries:
                 for j in range(nintervs):
                     all_counts[i,j] += 1
                     include_counts[i,j] += counts[i,j]
@@ -285,7 +289,7 @@ def common_interventions(region=None, income=None, byplatform=False, max_entries
     for k,key,vals in sc.odict(data).enumitems():
         count -= 2
         count2 = 0
-        pl.text(-2, count, key, fontweight='bold', horizontalalignment='right')
+        pl.text(-2, count, key, fontweight='bold', horizontalalignment='right', fontsize=6)
         maxval = len(vals)
         for row in vals:
             count -= 1
@@ -297,7 +301,7 @@ def common_interventions(region=None, income=None, byplatform=False, max_entries
             pl.barh(count, percentage, facecolor=thiscolor, edgecolor='none')
     
     ax.set_yticks(ticklocs)
-    ax.set_yticklabels(ticklabels)
+    ax.set_yticklabels(ticklabels, fontsize=4)
     ax.set_title(label)
     pl.xlim([0,100])
     pl.xlabel('Frequency of inclusion of intervention in EUHC package (%)')
@@ -326,8 +330,12 @@ if fig2:
 #    alloc_fig(income='High income', label='High-income')
 
 if fig3:
-    common_interventions(region='AFR', income=None, byplatform=False, max_entries=10, label='Africa (by disease area)')
-    common_interventions(region='AFR', income=None, byplatform=True, max_entries=10, label='Africa (by platform)')
+    common_interventions(region='AFR', income=None, byplatform=False, max_entries=100, entry=2, label='Africa (by disease area), USD1 pp')
+    common_interventions(region='AFR', income=None, byplatform=True, max_entries=100, entry=2, label='Africa (by platform), USD1 pp')
+    common_interventions(region='AFR', income=None, byplatform=False, max_entries=100, entry=4, label='Africa (by disease area), USD10 pp')
+    common_interventions(region='AFR', income=None, byplatform=True, max_entries=100, entry=4, label='Africa (by platform), USD10 pp')
+    common_interventions(region='AFR', income=None, byplatform=False, max_entries=100, entry=6, label='Africa (by disease area), USD100 pp')
+    common_interventions(region='AFR', income=None, byplatform=True, max_entries=100, entry=6, label='Africa (by platform), USD100 pp')
     
     
     
