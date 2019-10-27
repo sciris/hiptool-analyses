@@ -7,7 +7,7 @@ sc.tic()
 
 dosave = True
 missing_data = ['remove', 'assumption'][1] # Choose how to handle missing data
-spendings = [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000, 3000, 10000]
+spendings = [0.1, 0.3, 1, 3, 10, 30, 100, 300, 1000]#, 3000, 10000]
 nspendings = len(spendings)
 colors = sc.vectocolor(len(spendings))
 
