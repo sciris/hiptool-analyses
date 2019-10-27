@@ -16,7 +16,7 @@ dosave = False # Whether or not to save an example data file
 doplot = True # Whether or not to plot
 
 country = 'Zambia'
-spend = 0.1 # Per person spending
+spend = 100 # Per person spending
 missing_data = ['remove', 'assumption'][1] # Choose how to handle missing data
 
 P = hp.Project()
@@ -58,7 +58,7 @@ P.makepackage()
 meta = country_data.findrow(country, asdict=True)
 
 # Optimize
-P.package().optimize(budget=spend*meta['population'])
+P.package().optimize(budget=spend*meta['population'], verbose=True)
 
 df = P.package().data
 df.sort(col='shortname')
