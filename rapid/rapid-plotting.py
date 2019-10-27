@@ -3,8 +3,8 @@ import sciris as sc
 
 dosave = True
 fig1 = 0
-fig2 = 1
-fig3 = 0
+fig2 = 0
+fig3 = 1
 
 sc.heading('Loading data...')
 country_data = sc.loadspreadsheet('country-data.xlsx')
@@ -93,7 +93,7 @@ def dalys_fig(label='', region=None, income=None):
 
 
 
-def alloc_fig(label='', region=None, income=None, byplatform=False):
+def alloc_fig(label='', region=None, income=None, byplatform=False, logscale=False):
     sc.heading('Allocation figure')
     if not byplatform:
         category1 = interv_data['Category 1'].tolist()
@@ -102,6 +102,10 @@ def alloc_fig(label='', region=None, income=None, byplatform=False):
     else:
         iter_category = interv_data['Platform'].tolist()
     categories = sorted(set(iter_category))
+    print(categories)
+    if byplatform:
+        order = [3,0,2,1,4]
+        categories = [categories[o] for o in order]
     ncategories = len(categories)
     nspends, nintervs = R[0]['alloc'].shape
     mapping = []
@@ -154,16 +158,29 @@ def alloc_fig(label='', region=None, income=None, byplatform=False):
                 ]
         colors = colors[::-1]
     else:
-        colors = sc.vectocolor(len(categories))
+        colors = [
+              (0.9, 0.5, 0.0),
+              (0.0, 0.5, 0.9),
+              (0.0, 0.7, 0.4),
+              (0.0, 0.8, 0.5),
+              (0.0, 0.9, 0.6),
+              ]
+        colors = colors[::-1]
     
     for c in range(len(categories)):
-        current = allocdata[:,c]/allocdata.sum(axis=1)*100
+        if not logscale:
+            current = allocdata[:,c]/allocdata.sum(axis=1)*100
+        else:
+            current = allocdata[:,c]
         ax = pl.bar(x, current, bottom=previous, facecolor=colors[c])
         previous += current
         axlist.append(ax)
         
     xticks = ['$%s' % val for val in [0.1, 0.3, 1, 3, 10, 30, 100, 300, '1k', '3k', '10k']]
-    pl.ylabel('Allocation (%)')
+    if not logscale:
+        pl.ylabel('Allocation (%)')
+    else:
+        pl.ylabel('Allocation (US$)')
     if not byplatform:
         titletext = 'Spending annually by funding level and disease area'
     else:
@@ -173,6 +190,7 @@ def alloc_fig(label='', region=None, income=None, byplatform=False):
     pl.xticks(x, xticks)
     pl.xlabel('EUHC expenditure per person per year globally')
     pl.legend([ax[0] for ax in axlist][::-1], categories[::-1], bbox_to_anchor=(1,0.8))
+#    pl.gca().set_yscale('log')
     
     pl.show()
     
@@ -184,7 +202,7 @@ def alloc_fig(label='', region=None, income=None, byplatform=False):
 
 
 #%% Fig. 3 -- interventions
-if fig3:
+def common_interventions():
     sc.heading('Top interventions figure')
     df = sc.dataframe(cols=['Short name', 'Category 1', 'Category 2', 'Percent'], nrows=len(interv_data))
     for key in ['Short name', 'Category 1', 'Category 2']:
@@ -283,20 +301,22 @@ if fig3:
     
 #%% Fig. 1 -- DALYs
 if fig1:
-    dalys_fig(label='Global')
-    dalys_fig(region='EUR', label='Europe')
+#    dalys_fig(label='Global')
+#    dalys_fig(region='EUR', label='Europe')
     dalys_fig(region='AFR', label='Africa')
-    dalys_fig(income='Low income', label='Low-income')
-    dalys_fig(income='High income', label='High-income')
+#    dalys_fig(income='Low income', label='Low-income')
+#    dalys_fig(income='High income', label='High-income')
 
 if fig2:
-    alloc_fig(label='Global')
-    alloc_fig(label='platforms', byplatform=True)
+#    alloc_fig(label='Global')
+    alloc_fig(label='platforms (Africa)', region='AFR', byplatform=True, logscale=True)
 #    alloc_fig(region='EUR', label='Europe')
 #    alloc_fig(region='AFR', label='Africa')
 #    alloc_fig(income='Low income', label='Low-income')
 #    alloc_fig(income='High income', label='High-income')
 
+if fig3:
+    common_interventions()
 
 
 print('Done.')
