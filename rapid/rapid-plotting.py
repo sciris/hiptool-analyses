@@ -202,71 +202,105 @@ def alloc_fig(label='', region=None, income=None, byplatform=False, logscale=Fal
 
 
 #%% Fig. 3 -- interventions
-def common_interventions():
+if fig3: # def common_interventions():
+    region='AFR'
+    income=None
+    byplatform=False
     sc.heading('Top interventions figure')
-    df = sc.dataframe(cols=['Short name', 'Category 1', 'Category 2', 'Percent'], nrows=len(interv_data))
-    for key in ['Short name', 'Category 1', 'Category 2']:
+    if not byplatform:
+        category_list = interv_data['Category 1'].tolist()
+    else:
+        category_list = interv_data['Platform'].tolist()
+    categories = sorted(set(category_list))
+    if byplatform:
+        order = [3,0,2,1,4]
+        categories = [categories[o] for o in order]
+    keycols = ['Short name', 'Category 1', 'Category 2', 'Platform', 'ICER']
+    df = sc.dataframe(cols=keycols+['Percent'], nrows=len(interv_data))
+    for key in keycols:
         df[key] = interv_data[key]
     df['Percent'] = 0.0
+    df.sort('Short name')
     
-    nspends, nintervs = R[0]['dalys'].shape
-    for country in R.keys():
-        alloc = R[country]['alloc']
-        counts = pl.array((alloc>0).sum(axis=0), dtype=float)
-        df['Percent'] += counts/nspends/len(R)
+    nspends, nintervs = R[0]['alloc'].shape
+    all_counts = pl.zeros((nspends, nintervs))
+    include_counts = sc.dcp(all_counts)
+    for co,country in enumerate(R.keys()):
+        proceed = True
+        if region and country_data['who_region',co] != region:
+            proceed = False # Could use continue
+        if income and country_data['income_group',co] != income:
+            proceed = False # Could use continue
+        if proceed:
+            alloc = R[country]['alloc']
+            counts = pl.array(alloc>0, dtype=float)
+            for i in range(nspends):
+                for j in range(nintervs):
+                    all_counts[i,j] += 1
+                    include_counts[i,j] += counts[i,j]
+    
+    for j in range(nintervs):
+        include = include_counts[:,j].sum()
+        total = all_counts[:,j].sum()
+        df['Percent',j] = include / total
+        
+    df.sort(col='Percent', reverse=True)
+    
+    data = sc.odict().make(keys=categories)
+    
         
     if dosave:
         df.export('results/rapid_top-interventions.xlsx')
         
-    data = {'Communicable': [
-                ['ART care for PLHIV','Communicable','HIV/AIDS','100.00%'],
-                ['Treatment eligibility for hepatitis B and C','Communicable','Other','80.93%'],
-                ['Surgery for filarial hydrocele','Communicable','NTDs','74.87%'],
-                ['Severe malaria management','Communicable','Malaria', '74.45%'],
-                ['Medical male circumcision','Communicable','HIV/AIDS','73.93%'],
-                ['IPT for malaria in pregnancy','Communicable','Malaria','72.57%'],
-                ['Testing and counseling for HIV, STIs, hepatitis','Communicable','HIV/AIDS','72.57%'],
-                ['Provision of insecticide nets','Communicable','Malaria','68.70%'],
-                ['Test for G6PD deficiency','Communicable','Malaria','68.70%'],
-                ['Primaquine first-line malaria treatment','Communicable','Malaria','65.52%']
-                ],
-            
-            'NCDs': [
-                ['Urgent surgery for orthopedic injuries','NCDs','Injuries','96.55%'],
-                ['Tube thoracostomy','NCDs','Injuries','86.68%'],
-                ['Trauma-related amputations','NCDs','Injuries','85.79%'],
-                ['Trauma laparotomy','NCDs','Surgery','84.80%'],
-                ['Burr hole','NCDs','Cardiovascular','82.39%'],
-                ['Therapy for moderate to severe arthritis','NCDs','Other','76.44%'],
-                ['Suturing laceration','NCDs','Injuries','74.97%'],
-                ['Non-displaced fractures management','NCDs','Injuries','74.35%'],
-                ['Elective surgery for orthopedic injuries','NCDs','Injuries','73.93%'],
-                ['Acute management of swallowing dysfunction','NCDs','Other','72.94%'],
-                ],
-            
-            'RMNCH+N': [
-                ['Parent training for high-risk families','RMNCH+N Child health','83.33%'],
-                ['Repair of obstetric fistula','RMNCH+N','Maternal health','74.76%'],
-                ['Miscarriage and abortions management','RMNCH+N Maternal health','74.09%'],
-                ['Antenatal and postpartum education','RMNCH+N Child health','73.09%'],
-                ['WASH behavior change interventions','RMNCH+N Nutrition','68.81%'],
-                ['Provision of condoms','RMNCH+N Family planning','65.52%'],
-                ['Induction of labor post-term','RMNCH+N Maternal health','64.73%'],
-                ['Acute severe malnutrition management','RMNCH+N Nutrition','64.05%'],
-                ['Jaundice management with phototherapy','RMNCH+N Child health','63.32%'],
-                ['Care for fetal growth restriction','RMNCH+N Nutrition','63.17%'],
-                ],
-            
-            'Vaccination': [
-                ['Flu and pneumococcal vaccinations','Vaccination Other vaccines','61.08%'],
-                ['Childhood vaccination series','Vaccination Child vaccines','60.24%'],
-                ['Rotavirus vaccination','Vaccination Child vaccines','60.24%'],
-                ['Use of vaccines for endemic infections','Vaccination Other vaccines','48.17%'],
-                ['Pneumococcus vaccination','Vaccination Other vaccines','46.19%'],
-                ['School based HPV vaccination for girls','Vaccination Other vaccines','43.99%'],
-                ['Tetanus toxoid immunization','Vaccination Child vaccines','22.00%'],
-                ]
-            }
+#    data = {'Communicable': [
+#                ['ART care for PLHIV','Communicable','HIV/AIDS','100.00%'],
+#                ['Treatment eligibility for hepatitis B and C','Communicable','Other','80.93%'],
+#                ['Surgery for filarial hydrocele','Communicable','NTDs','74.87%'],
+#                ['Severe malaria management','Communicable','Malaria', '74.45%'],
+#                ['Medical male circumcision','Communicable','HIV/AIDS','73.93%'],
+#                ['IPT for malaria in pregnancy','Communicable','Malaria','72.57%'],
+#                ['Testing and counseling for HIV, STIs, hepatitis','Communicable','HIV/AIDS','72.57%'],
+#                ['Provision of insecticide nets','Communicable','Malaria','68.70%'],
+#                ['Test for G6PD deficiency','Communicable','Malaria','68.70%'],
+#                ['Primaquine first-line malaria treatment','Communicable','Malaria','65.52%']
+#                ],
+#            
+#            'NCDs': [
+#                ['Urgent surgery for orthopedic injuries','NCDs','Injuries','96.55%'],
+#                ['Tube thoracostomy','NCDs','Injuries','86.68%'],
+#                ['Trauma-related amputations','NCDs','Injuries','85.79%'],
+#                ['Trauma laparotomy','NCDs','Surgery','84.80%'],
+#                ['Burr hole','NCDs','Cardiovascular','82.39%'],
+#                ['Therapy for moderate to severe arthritis','NCDs','Other','76.44%'],
+#                ['Suturing laceration','NCDs','Injuries','74.97%'],
+#                ['Non-displaced fractures management','NCDs','Injuries','74.35%'],
+#                ['Elective surgery for orthopedic injuries','NCDs','Injuries','73.93%'],
+#                ['Acute management of swallowing dysfunction','NCDs','Other','72.94%'],
+#                ],
+#            
+#            'RMNCH+N': [
+#                ['Parent training for high-risk families','RMNCH+N Child health','83.33%'],
+#                ['Repair of obstetric fistula','RMNCH+N','Maternal health','74.76%'],
+#                ['Miscarriage and abortions management','RMNCH+N Maternal health','74.09%'],
+#                ['Antenatal and postpartum education','RMNCH+N Child health','73.09%'],
+#                ['WASH behavior change interventions','RMNCH+N Nutrition','68.81%'],
+#                ['Provision of condoms','RMNCH+N Family planning','65.52%'],
+#                ['Induction of labor post-term','RMNCH+N Maternal health','64.73%'],
+#                ['Acute severe malnutrition management','RMNCH+N Nutrition','64.05%'],
+#                ['Jaundice management with phototherapy','RMNCH+N Child health','63.32%'],
+#                ['Care for fetal growth restriction','RMNCH+N Nutrition','63.17%'],
+#                ],
+#            
+#            'Vaccination': [
+#                ['Flu and pneumococcal vaccinations','Vaccination Other vaccines','61.08%'],
+#                ['Childhood vaccination series','Vaccination Child vaccines','60.24%'],
+#                ['Rotavirus vaccination','Vaccination Child vaccines','60.24%'],
+#                ['Use of vaccines for endemic infections','Vaccination Other vaccines','48.17%'],
+#                ['Pneumococcus vaccination','Vaccination Other vaccines','46.19%'],
+#                ['School based HPV vaccination for girls','Vaccination Other vaccines','43.99%'],
+#                ['Tetanus toxoid immunization','Vaccination Child vaccines','22.00%'],
+#                ]
+#            }
 
     fig = pl.figure(figsize=(9,17))
     ax = fig.add_axes([0.5,0.1,0.45,0.85])
@@ -315,8 +349,8 @@ if fig2:
 #    alloc_fig(income='Low income', label='Low-income')
 #    alloc_fig(income='High income', label='High-income')
 
-if fig3:
-    common_interventions()
+#if fig3:
+#    common_interventions()
 
 
 print('Done.')

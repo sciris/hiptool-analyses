@@ -72,6 +72,7 @@ def optimize(D, country_data, c):
         df = D[country].package().data
         alloc.append(sc.dcp(df['opt_spend'][:]))
         dalys.append(sc.dcp(df['opt_dalys_averted'][:]))
+        meta['interv_names'] = sc.dcp(df['shortname'][:])
     result = sc.odict({'meta':meta, 'alloc':pl.array(alloc), 'dalys':pl.array(dalys), 'package':D[country].package()})
     return result
 
