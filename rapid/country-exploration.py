@@ -16,7 +16,7 @@ dosave = False # Whether or not to save an example data file
 doplot = True # Whether or not to plot
 
 country = 'Zambia'
-spend = 1000 # Per person spending
+spend = 1.0 # Per person spending
 missing_data = ['remove', 'assumption'][1] # Choose how to handle missing data
 
 P = hp.Project()
@@ -39,12 +39,17 @@ for key in ['Unit cost', 'ICER']:
     df = P.interv().data
     missing_inds = sc.findinds(df[key]<0)
     if len(missing_inds):
+        unitcosts = df['Unit cost'][:]
+        icers = df['ICER'][:]
+        valid = sc.findinds(df[key]>0)
+        unitcosts = unitcosts[valid]
+        icers = icers[valid]
         if missing_data == 'remove':
             df.rmrows(missing_inds)
         elif missing_data == 'assumption':
             for ind in missing_inds:
-                df['Unit cost', ind] = 1000 # 10000.0 # WARNING, completely arbitrary!
-                df['ICER', ind] = 1000# 660000
+                df['Unit cost', ind] = unitcosts.mean() # 10000.0 # WARNING, completely arbitrary!
+                df['ICER', ind] = icers.mean() # 660000
     
     P.interv().data[key] *= this_factor/baseline_factor
 
@@ -71,7 +76,15 @@ if doplot:
     
 print('Done')
 
-
-# More examples
-# dd = P.burden().export(cols=['cause','dalys','deaths','prevalence'])
-# P.burden().plottopcauses(which='prevalence', n=15)
+#from PyQt5 import QtWidgets, QtCore
+#import sys
+#MyApp = QtWidgets.QApplication(sys.argv)
+#V = MyApp.desktop().screenGeometry()
+#h = V.height()
+#w = V.width()
+#print("The screen resolution (width X height) is the following:")
+#print(str(w) + "X" + str(h))
+#print('and')
+#print(QtCore.Qt.AA_EnableHighDpiScaling)
+#print(QtCore.Qt.AA_UseHighDpiPixmaps)
+#print('done')
