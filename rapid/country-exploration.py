@@ -15,7 +15,7 @@ import hiptool as hp
 dosave = False # Whether or not to save an example data file
 doplot = True # Whether or not to plot
 
-country = 'Afghanistan'
+country = 'Zambia'
 spend = 1000 # Per person spending
 missing_data = ['remove', 'assumption'][1] # Choose how to handle missing data
 
@@ -61,13 +61,12 @@ df.sort(col='shortname')
 
 # Ploting
 if doplot:
-    P.burden().plot()
-
+#    P.burden().plot()
 #    fig1 = P.package().plot_spending(which='current')
 #    fig2 = P.package().plot_spending(which='optimized')
 #    fig3 = P.package().plot_dalys(which='current')
 #    fig4 = P.package().plot_dalys(which='optimized')
-    fig5 = P.package().plot_cascade()
+    fig5 = P.package().plot_cascade(cutoff=100e3)
     pl.show()
     
 print('Done')
