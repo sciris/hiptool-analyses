@@ -2,13 +2,12 @@ import pylab as pl
 import sciris as sc
 
 dosave = True
-fig1 = False
-fig2 = False
+fig1 = True
+fig2 = True
 
 sc.heading('Loading data...')
 country_data = sc.loadspreadsheet('country-data.xlsx')
 interv_data = sc.loadspreadsheet('rapid_interventions.xlsx')
-spend_data = sc.loadspreadsheet('rapid_spending.xlsx')
 D = sc.loadobj('results/rapid_data.obj')
 R = sc.loadobj('results/rapid_results.obj')
 
