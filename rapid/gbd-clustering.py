@@ -6,7 +6,7 @@ from sklearn import cluster as sklc
 
 toplot = [
 #        'burdenmatrix',
-#        'burdenmap',
+        'burdenmap',
         'clustermaps',
         ]
 
@@ -41,9 +41,6 @@ for c,country in enumerate(countries):
         print(f'Unmatched: {country}')
 logdatapercapita = pl.log10(datapercapita+logeps)
 
-
-
-# Do clustering
 burdeneps = 1.0
 totalburden = data[:,-1]
 totalpercapita = datapercapita[:,-1]
@@ -51,19 +48,29 @@ normdata = sc.dcp(data)
 for c,country in enumerate(countries):
     normdata[c,:] /= totalburden[c]
 
-clusters = [2,3,4,5,6,8,10,20]
+order = pl.argsort(totalpercapita)
+for i,o in enumerate(order):
+    print(f'{i+1:3}. {countries[o]:15}: {totalpercapita[o]: 6.3f}')
+    
+dpc = datapercapita / datapercapita.max()
+nd = normdata / normdata.max()
+
+# Do clustering
+clusters = [2,3,4,7,20,190]
 clusterdata = sc.odict()
 for cluster in clusters:
-    kmeans = sklc.KMeans(n_clusters=cluster, random_state=234).fit(normdata)
+    kmeans = sklc.KMeans(n_clusters=cluster, random_state=0).fit(dpc)
     labels = kmeans.labels_
     nlabels = max(labels)+1
     burdenbylabel = pl.zeros(nlabels)
-    countbylabel = pl.zeros(nlabels)
+    popbylabel = pl.zeros(nlabels)
     for c in range(ncountries):
-        burdenbylabel[labels[c]] += totalpercapita[c]
-        countbylabel[labels[c]] += 1
+        burdenbylabel[labels[c]] += totalburden[c]
+        row = country_data.findrow(key=countries[c], col='name', asdict=True, die=True)
+        popbylabel[labels[c]] += row['population']
     for l in range(nlabels):
-        burdenbylabel[l] /= countbylabel[l]
+        burdenbylabel[l] /= popbylabel[l]
+    print(popbylabel)
     print(burdenbylabel)
     labelorder = pl.argsort(burdenbylabel)
     reverseorder = pl.argsort(labelorder)
@@ -72,6 +79,7 @@ for cluster in clusters:
     sortedlabels = pl.zeros(ncountries)
     for c in range(ncountries):
         sortedlabels[c] = reverseorder[labels[c]]
+        sortedlabels[c] = burdenbylabel[labels[c]]
     clusterdata[str(cluster)] = sortedlabels
     
     
@@ -102,7 +110,7 @@ remapping = sc.odict({
          'Somaliland': 'Somalia',
          'Falkland Is.': 'Argentina',
 #         'Fr. S. Antarctic Lands': 'France', # Skip for 0 reference
-         'N. Cyprus': 'Cyprus',
+#         'N. Cyprus': 'Cyprus',
          'New Caledonia': 'France',
         })
 
@@ -119,9 +127,15 @@ def apply_data(world, input_data):
                 thiscountry = row['name']
             c = mapcountries.index(thiscountry)
             world.at[index, 'plotvar'] = input_data[c]
+            
             matched.append(row['name'])
             count += 1
         else:
+            print(row['name'])
+            if thiscountry == 'Fr. S. Antarctic Lands':
+                world.at[index, 'plotvar'] = 0.99
+            if thiscountry == 'N. Cyprus':
+                world.at[index, 'plotvar'] = 0.01
             unmatched.append(row['name'])
             mismatchcount += 1
     
@@ -145,10 +159,10 @@ if 'burdenmatrix' in toplot:
 
 # Plot as map
 if 'burdenmap' in toplot:
-    world = apply_data(world, logdatapercapita[:,-1])
+    world = apply_data(world, datapercapita[:,-1])
     fig = pl.figure(figsize=(40,18))
     ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
-    world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula');
+    world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True);
     pl.show()
     
 if 'clustermaps' in toplot:
@@ -156,7 +170,7 @@ if 'clustermaps' in toplot:
         world = apply_data(world, cdata)
         fig = pl.figure(figsize=(40,18))
         ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
-        world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula');
+        world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True);
         pl.title(f'Clusters = {key}')
     pl.show()
 
