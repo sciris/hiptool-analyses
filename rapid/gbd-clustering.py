@@ -2,7 +2,6 @@ import pylab as pl
 import geopandas
 import sciris as sc
 import hiptool as hp
-import scipy.stats as sts
 from sklearn import cluster as sklc
 
 toplot = [
@@ -52,18 +51,11 @@ normdata = sc.dcp(data)
 for c,country in enumerate(countries):
     normdata[c,:] /= totalburden[c]
 
-replicas = 20
 clusters = [2,3,4,5,6,8,10,20]
 clusterdata = sc.odict()
-for cl,cluster in enumerate(clusters):
-    print(f'Running cluster {cl} of {len(clusters)}')
-    labelarr = pl.zeros((replicas, ncountries))
-    for replica in range(replicas):
-        kmeans = sklc.KMeans(n_clusters=cluster, random_state=replica).fit(normdata)
-        labelarr[replica,:] = kmeans.labels_
-    labels = pl.zeros(ncountries, dtype=int)
-    for c in range(ncountries):
-        labels[c] = sts.mode(labelarr[:,c]).mode[0] # Stupid
+for cluster in clusters:
+    kmeans = sklc.KMeans(n_clusters=cluster, random_state=234).fit(normdata)
+    labels = kmeans.labels_
     nlabels = max(labels)+1
     burdenbylabel = pl.zeros(nlabels)
     countbylabel = pl.zeros(nlabels)
@@ -71,9 +63,6 @@ for cl,cluster in enumerate(clusters):
         burdenbylabel[labels[c]] += totalpercapita[c]
         countbylabel[labels[c]] += 1
     for l in range(nlabels):
-        if countbylabel[l] == 0: 
-            countbylabel[l] += 1
-            print(f'Warning, no countries for label {l}!')
         burdenbylabel[l] /= countbylabel[l]
     print(burdenbylabel)
     labelorder = pl.argsort(burdenbylabel)
@@ -112,7 +101,7 @@ remapping = sc.odict({
          'Kosovo': 'Serbia',
          'Somaliland': 'Somalia',
          'Falkland Is.': 'Argentina',
-#             'Fr. S. Antarctic Lands': 'France', # Skip for 0 reference
+#         'Fr. S. Antarctic Lands': 'France', # Skip for 0 reference
          'N. Cyprus': 'Cyprus',
          'New Caledonia': 'France',
         })
