@@ -24,15 +24,22 @@ P.loadburden(filename='rapid_BoD.xlsx')
 P.loadinterventions(filename='rapid_interventions.xlsx')
 
 # Modify MEC values
-sigma = 1.0
-for r in range(P.intervsets[0].data.nrows):
-    row = P.intervsets[0].data['parsedbc',r]
-    for i,val in enumerate(row):
-        mec = val[1]
-#        newmec = min(1.0, 0.5*mec)
-        newmec = pl.median([0, (1+sigma*pl.randn())*mec, 1])
-        val[1] = newmec
-
+modify_icer = True
+modify_mec = False
+if modify_mec:
+    sigma = 1.0
+    for r in range(P.intervsets[0].data.nrows):
+        row = P.intervsets[0].data['parsedbc',r]
+        for i,val in enumerate(row):
+            mec = val[1]
+    #        newmec = min(1.0, 0.5*mec)
+            newmec = pl.median([0, (1+sigma*pl.randn())*mec, 1])
+            val[1] = newmec
+if modify_icer:
+    sigma = 0.5
+    rands = 1 + sigma*pl.randn(P.intervsets[0].data.nrows)
+    rands = pl.maximum(rands, 0.1)
+    P.intervsets[0].data['ICER'] *= rands
 
 bod_data = sc.loadobj('gbd-data.dat')
 country_data = sc.loadspreadsheet('country-data.xlsx')
