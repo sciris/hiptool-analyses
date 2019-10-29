@@ -2,6 +2,7 @@ import pylab as pl
 import geopandas
 import sciris as sc
 import hiptool as hp
+import scipy.stats as sts
 from sklearn import cluster as sklc
 
 toplot = [
@@ -44,23 +45,44 @@ logdatapercapita = pl.log10(datapercapita+logeps)
 
 
 # Do clustering
+burdeneps = 1.0
 totalburden = data[:,-1]
+totalpercapita = datapercapita[:,-1]
 normdata = sc.dcp(data)
 for c,country in enumerate(countries):
-    normdata[:,c] /= totalburden
+    normdata[c,:] /= totalburden[c]
 
+replicas = 20
 clusters = [2,3,4,5,6,8,10,20]
 clusterdata = sc.odict()
-for cluster in clusters:
-    kmeans = sklc.KMeans(n_clusters=cluster, random_state=0).fit(normdata)
-    labels = kmeans.labels_
-    burdenbylabel = pl.zeros(max(labels)+1)
+for cl,cluster in enumerate(clusters):
+    print(f'Running cluster {cl} of {len(clusters)}')
+    labelarr = pl.zeros((replicas, ncountries))
+    for replica in range(replicas):
+        kmeans = sklc.KMeans(n_clusters=cluster, random_state=replica).fit(normdata)
+        labelarr[replica,:] = kmeans.labels_
+    labels = pl.zeros(ncountries, dtype=int)
     for c in range(ncountries):
-        burdenbylabel[labels[c]] += totalburden[c]
+        labels[c] = sts.mode(labelarr[:,c]).mode[0] # Stupid
+    nlabels = max(labels)+1
+    burdenbylabel = pl.zeros(nlabels)
+    countbylabel = pl.zeros(nlabels)
+    for c in range(ncountries):
+        burdenbylabel[labels[c]] += totalpercapita[c]
+        countbylabel[labels[c]] += 1
+    for l in range(nlabels):
+        if countbylabel[l] == 0: 
+            countbylabel[l] += 1
+            print(f'Warning, no countries for label {l}!')
+        burdenbylabel[l] /= countbylabel[l]
+    print(burdenbylabel)
     labelorder = pl.argsort(burdenbylabel)
+    reverseorder = pl.argsort(labelorder)
+    print(cluster)
+    print(labelorder)
     sortedlabels = pl.zeros(ncountries)
     for c in range(ncountries):
-        sortedlabels[c] = labelorder[labels[c]]
+        sortedlabels[c] = reverseorder[labels[c]]
     clusterdata[str(cluster)] = sortedlabels
     
     
@@ -114,11 +136,11 @@ def apply_data(world, input_data):
             unmatched.append(row['name'])
             mismatchcount += 1
     
-    print(f'Matched {count} of {len(mapcountries)}')
-    print('Mismatches 1:')
-    print(sorted(list(set(mapcountries)-set(matched))))
-    print('Mismatches 2:')
-    print(sorted(list(set(unmatched))))
+#    print(f'Matched {count} of {len(mapcountries)}')
+#    print('Mismatches 1:')
+#    print(sorted(list(set(mapcountries)-set(matched))))
+#    print('Mismatches 2:')
+#    print(sorted(list(set(unmatched))))
     
     return world
 
