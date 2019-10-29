@@ -1,12 +1,13 @@
 import pylab as pl
 import geopandas
-import sklearn
 import sciris as sc
 import hiptool as hp
+from sklearn import cluster as sklc
 
 toplot = [
 #        'burdenmatrix',
-        'burdenmap',
+#        'burdenmap',
+        'clustermaps',
         ]
 
 bod = sc.loadobj('gbd-data.dat')
@@ -42,45 +43,59 @@ logdatapercapita = pl.log10(datapercapita+logeps)
 
 
 
-# Plot all burdens
-if 'burdenmatrix' in toplot:
-    fig = pl.figure()
-    pl.imshow(logdata)
-    pl.colorbar()
+# Do clustering
+totalburden = data[:,-1]
+normdata = sc.dcp(data)
+for c,country in enumerate(countries):
+    normdata[:,c] /= totalburden
 
-
-# Plot as map
-if 'burdenmap' in toplot:
-    world = geopandas.read_file(geopandas.datasets.get_path('naturalearth_lowres'))
-    world = world[(world.pop_est>0) & (world.name!="Antarctica")]
-    world['bod'] = 0.0
+clusters = [2,3,4,5,6,8,10,20]
+clusterdata = sc.odict()
+for cluster in clusters:
+    kmeans = sklc.KMeans(n_clusters=cluster, random_state=0).fit(normdata)
+    labels = kmeans.labels_
+    burdenbylabel = pl.zeros(max(labels)+1)
+    for c in range(ncountries):
+        burdenbylabel[labels[c]] += totalburden[c]
+    labelorder = pl.argsort(burdenbylabel)
+    sortedlabels = pl.zeros(ncountries)
+    for c in range(ncountries):
+        sortedlabels[c] = labelorder[labels[c]]
+    clusterdata[str(cluster)] = sortedlabels
     
-    mapcountries = sc.dcp(countries)
-
-    remapping = sc.odict({
-             'Bosnia and Herz.': 'Bosnia and Herzegovina',
-             'Central African Rep.': 'Central African Republic',
-             "Côte d'Ivoire": "Cote d'Ivoire",
-             'Czech Rep.': 'Czech Republic',
-             'Dem. Rep. Congo': 'Democratic Republic of the Congo',
-             'Dominican Rep.': 'Dominican Republic',
-             'Eq. Guinea': 'Equatorial Guinea',
-             'Lao PDR': 'Laos',
-             'Dem. Rep. Korea': 'North Korea',
-             'Russia': 'Russian Federation',
-             'Solomon Is.': 'Solomon Islands',
-             'Korea': 'South Korea',
-             'S. Sudan': 'South Sudan',
-             'Bahamas': 'The Bahamas',
-             'Gambia': 'The Gambia',
-             'Kosovo': 'Serbia',
-             'Somaliland': 'Somalia',
-             'Falkland Is.': 'Argentina',
-#             'Fr. S. Antarctic Lands': 'France',
-             'N. Cyprus': 'Cyprus',
-             'New Caledonia': 'France',
-            })
     
+# Set up map data
+world = geopandas.read_file(geopandas.datasets.get_path('naturalearth_lowres'))
+world = world[(world.pop_est>0) & (world.name!="Antarctica")]
+world['plotvar'] = 0.0
+
+mapcountries = sc.dcp(countries)
+
+remapping = sc.odict({
+         'Bosnia and Herz.': 'Bosnia and Herzegovina',
+         'Central African Rep.': 'Central African Republic',
+         "Côte d'Ivoire": "Cote d'Ivoire",
+         'Czech Rep.': 'Czech Republic',
+         'Dem. Rep. Congo': 'Democratic Republic of the Congo',
+         'Dominican Rep.': 'Dominican Republic',
+         'Eq. Guinea': 'Equatorial Guinea',
+         'Lao PDR': 'Laos',
+         'Dem. Rep. Korea': 'North Korea',
+         'Russia': 'Russian Federation',
+         'Solomon Is.': 'Solomon Islands',
+         'Korea': 'South Korea',
+         'S. Sudan': 'South Sudan',
+         'Bahamas': 'The Bahamas',
+         'Gambia': 'The Gambia',
+         'Kosovo': 'Serbia',
+         'Somaliland': 'Somalia',
+         'Falkland Is.': 'Argentina',
+#             'Fr. S. Antarctic Lands': 'France', # Skip for 0 reference
+         'N. Cyprus': 'Cyprus',
+         'New Caledonia': 'France',
+        })
+
+def apply_data(world, input_data):
     count = 0
     mismatchcount = 0
     matched = []
@@ -92,7 +107,7 @@ if 'burdenmap' in toplot:
             else:
                 thiscountry = row['name']
             c = mapcountries.index(thiscountry)
-            world.at[index, 'bod'] = logdatapercapita[c,-1]
+            world.at[index, 'plotvar'] = input_data[c]
             matched.append(row['name'])
             count += 1
         else:
@@ -105,9 +120,33 @@ if 'burdenmap' in toplot:
     print('Mismatches 2:')
     print(sorted(list(set(unmatched))))
     
+    return world
+
+
+
+# Plot all burdens
+if 'burdenmatrix' in toplot:
+    fig = pl.figure()
+    pl.imshow(logdata)
+#    pl.imshow(pl.log10(normdata+1e-6))
+    pl.colorbar()
+
+
+# Plot as map
+if 'burdenmap' in toplot:
+    world = apply_data(world, logdatapercapita[:,-1])
     fig = pl.figure(figsize=(40,18))
     ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
-    world.plot(ax=ax, column='bod', edgecolor=(0.5,0.5,0.5), cmap='parula');
+    world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula');
+    pl.show()
+    
+if 'clustermaps' in toplot:
+    for key,cdata in clusterdata.items():
+        world = apply_data(world, cdata)
+        fig = pl.figure(figsize=(40,18))
+        ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
+        world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula');
+        pl.title(f'Clusters = {key}')
     pl.show()
 
 print('Done.')
