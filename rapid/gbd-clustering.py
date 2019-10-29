@@ -109,8 +109,8 @@ remapping = sc.odict({
          'Kosovo': 'Serbia',
          'Somaliland': 'Somalia',
          'Falkland Is.': 'Argentina',
-#         'Fr. S. Antarctic Lands': 'France', # Skip for 0 reference
-#         'N. Cyprus': 'Cyprus',
+         'Fr. S. Antarctic Lands': 'France', # Skip for 0 reference
+         'N. Cyprus': 'Cyprus',
          'New Caledonia': 'France',
         })
 
@@ -120,24 +120,28 @@ def apply_data(world, input_data):
     matched = []
     unmatched = []
     for index, row in world.iterrows():
-        if row['name'] in mapcountries+remapping.keys():
-            if row['name'] in remapping.keys():
-                thiscountry = remapping[row['name']]
-            else:
-                thiscountry = row['name']
-            c = mapcountries.index(thiscountry)
-            world.at[index, 'plotvar'] = input_data[c]
-            
-            matched.append(row['name'])
-            count += 1
+#        if row['name'] in mapcountries+remapping.keys():
+        if row['name'] in remapping.keys():
+            thiscountry = remapping[row['name']]
         else:
-            print(row['name'])
-            if thiscountry == 'Fr. S. Antarctic Lands':
-                world.at[index, 'plotvar'] = 0.99
-            if thiscountry == 'N. Cyprus':
-                world.at[index, 'plotvar'] = 0.01
-            unmatched.append(row['name'])
-            mismatchcount += 1
+            thiscountry = row['name']
+        c = mapcountries.index(thiscountry)
+        world.at[index, 'plotvar'] = input_data[c]
+        if row['name'] == 'Fr. S. Antarctic Lands':
+            world.at[index, 'plotvar'] = 0.99
+        if row['name'] == 'N. Cyprus':
+            world.at[index, 'plotvar'] = 0.01
+        
+        matched.append(row['name'])
+        count += 1
+#        else:
+#            print(row['name'])
+#            if thiscountry == 'Fr. S. Antarctic Lands':
+#                world.at[index, 'plotvar'] = 0.99
+#            if thiscountry == 'N. Cyprus':
+#                world.at[index, 'plotvar'] = 0.01
+#            unmatched.append(row['name'])
+#            mismatchcount += 1
     
 #    print(f'Matched {count} of {len(mapcountries)}')
 #    print('Mismatches 1:')
