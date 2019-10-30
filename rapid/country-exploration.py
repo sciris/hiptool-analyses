@@ -112,11 +112,19 @@ print('Done')
 country_data = sc.loadspreadsheet('country-data.xlsx')
 interv_data = sc.loadspreadsheet('rapid_interventions.xlsx')
 
-dalys = P.package().data['opt_dalys_averted']
+idata = sc.dcp(interv_data)
+idata.sort(col='Short name')
+
+pdata = sc.dcp(P.package().data)
+pdata.sort(col='shortname')
+
+assert idata['Short name'].tolist() == pdata['shortname'].tolist()
+
+dalys = pdata['opt_dalys_averted']
 
 sc.heading('DALYs figure')
-category1 = interv_data['Category 1'].tolist()
-category2 = interv_data['Category 2'].tolist()
+category1 = idata['Category 1'].tolist()
+category2 = idata['Category 2'].tolist()
 interv_category = [c1+': '+c2 for c1,c2 in zip(category1, category2)]
 categories = sorted(set(interv_category))
 ncategories = len(categories)
@@ -127,7 +135,7 @@ for i_c in interv_category:
     for c,cat in enumerate(categories):
         if i_c == cat:
             mapping.append(c)
-
+            
 dalydata = pl.zeros(ncategories)
 for i in range(nintervs):
     c = mapping[i]
