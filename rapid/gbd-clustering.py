@@ -4,17 +4,19 @@ import sciris as sc
 import hiptool as hp
 from sklearn import cluster as sklc
 
+pl.rc('font', size=16)
+
 toplot = [
 #        'burdenmatrix',
 #        'burdenmap',
-        'clustermaps',
+#        'clustermaps', # This is the one that's actually used
         ]
 
 bod = sc.loadobj('gbd-data.dat')
 country_data = sc.loadspreadsheet('country-data.xlsx')
-
+savedir = '/home/cliffk/unsw/hiptool-analyses/rapid/talk_results'
 which = {'dalys':0, 'deaths':1, 'prevalence':2}['dalys']
-
+dosave = True
 logeps = 1.0
 
 countries = bod.keys()
@@ -57,7 +59,8 @@ nd = normdata / normdata.max()
 
 # Do clustering
 clusters = [2,3,4,7,195]
-clusterdata = sc.odict()
+clusterlabels = sc.odict()
+clusterdalys = sc.odict()
 for cluster in clusters:
     kmeans = sklc.KMeans(n_clusters=cluster, random_state=0).fit(dpc)
     labels = kmeans.labels_
@@ -77,9 +80,12 @@ for cluster in clusters:
     print(cluster)
     print(labelorder)
     sortedlabels = pl.zeros(ncountries)
+    sorteddalys = pl.zeros(ncountries)
     for c in range(ncountries):
-        sortedlabels[c] = reverseorder[labels[c]]
-    clusterdata[str(cluster)] = sortedlabels
+        sortedlabels[c] = reverseorder[labels[c]]/(nlabels-1)
+        sorteddalys[c] = burdenbylabel[labels[c]]
+    clusterlabels[str(cluster)] = sortedlabels
+    clusterdalys[str(cluster)] = sorteddalys
     
     
 # Set up map data
@@ -113,6 +119,7 @@ remapping = sc.odict({
          'New Caledonia': 'France',
         })
 
+    
 def apply_data(world, input_data, minval, maxval):
     for index, row in world.iterrows():
         if row['name'] in remapping.keys():
@@ -128,6 +135,16 @@ def apply_data(world, input_data, minval, maxval):
     return world
 
 
+def plot_world(world):
+    fig = pl.figure(figsize=(38,20))
+    ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
+    world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True)
+    fig.axes[0].set_position([0.04, 0.05, 0.9, 1.00]) # Fix map position
+    fig.axes[1].set_position([0.95, 0.20, 0.9, 0.70]) # Fix colorbar position
+    pl.xlabel('Longitude')
+    pl.ylabel('Latitude')
+    return fig
+
 
 # Plot all burdens
 if 'burdenmatrix' in toplot:
@@ -140,29 +157,23 @@ if 'burdenmatrix' in toplot:
 # Plot as map
 if 'burdenmap' in toplot:
     world = apply_data(world, datapercapita[:,-1], minval=0, maxval=1)
-    fig = pl.figure(figsize=(40,18))
-    ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
-    world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True);
+    fig = plot_world(world)
     pl.show()
     
 if 'clustermaps' in toplot:
-    clusterdalys = sc.dcp(clusterdata)
     for key,cdata in clusterdalys.items():
-        for c in range(ncountries):
-            cdata[c] = burdenbylabel[int(cdata[c])]
-        world = apply_data(world, cdata, minval=0, maxval=datapercapita.max())
-        fig = pl.figure(figsize=(40,18))
-        ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
-        world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True);
-        pl.title(f'Clusters = {key}')
+        world = apply_data(world, cdata, minval=0, maxval=1)
+        fig = plot_world(world)
+        pl.title(f'DALYs per person per year (number of clusters = {key})')
+        if dosave:
+            pl.savefig(f'{savedir}/rapid_clusterdalys-{key}.png', dpi=100)
     
-    clusterlabels = sc.dcp(clusterdata)
     for key,cdata in clusterlabels.items():
-        world = apply_data(world, cdata, minval=None, maxval=None)
-        fig = pl.figure(figsize=(40,18))
-        ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
-        world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula');
-        pl.title(f'Clusters = {key}')
+        world = apply_data(world, cdata, minval=0, maxval=1)
+        fig = plot_world(world)
+        pl.title(f'Country cluster (number of clusters = {key})')
+        if dosave:
+            pl.savefig(f'{savedir}/rapid_clusterlabels-{key}.png', dpi=100)
     
     
     
