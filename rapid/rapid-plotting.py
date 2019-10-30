@@ -209,7 +209,7 @@ def common_interventions(region=None, income=None, byplatform=False, max_entries
         category_list = interv_data['Platform'].tolist()
     categories = sorted(set(category_list))
     if byplatform:
-        order = [3,0,2,1,4]
+        order = [0,2,1,3]
         categories = [categories[o] for o in order]
     keycols = ['Short name', 'Category 1', 'Category 2', 'Platform', 'ICER']
     df = sc.dataframe(cols=keycols+['Percent'], nrows=len(interv_data))
