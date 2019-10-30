@@ -2,8 +2,8 @@ import pylab as pl
 import sciris as sc
 
 dosave = True
-fig1 = 0
-fig2 = 0
+fig1 = 1
+fig2 = 1
 fig3 = 1
 
 sc.heading('Loading data...')
@@ -104,7 +104,7 @@ def alloc_fig(label='', region=None, income=None, byplatform=False, logscale=Fal
     categories = sorted(set(iter_category))
     print(categories)
     if byplatform:
-        order = [3,0,2,1,4]
+        order = [0,2,1,3]
         categories = [categories[o] for o in order]
     ncategories = len(categories)
     nspends, nintervs = R[0]['alloc'].shape
@@ -161,7 +161,6 @@ def alloc_fig(label='', region=None, income=None, byplatform=False, logscale=Fal
         colors = [
               (0.9, 0.5, 0.0),
               (0.0, 0.5, 0.9),
-              (0.0, 0.7, 0.4),
               (0.0, 0.8, 0.5),
               (0.0, 0.9, 0.6),
               ]
@@ -280,7 +279,6 @@ def common_interventions(region=None, income=None, byplatform=False, max_entries
               (0.0, 0.2, 0.5),
               (0.0, 0.5, 0.0),
               (0.0, 0.5, 0.3),
-              (0.0, 0.3, 0.5),
               ]
         darkest = darkest[::-1]
         
@@ -315,19 +313,19 @@ def common_interventions(region=None, income=None, byplatform=False, max_entries
     
 #%% Fig. 1 -- DALYs
 if fig1:
-#    dalys_fig(label='Global')
-#    dalys_fig(region='EUR', label='Europe')
+    dalys_fig(label='Global')
+    dalys_fig(region='EUR', label='Europe')
     dalys_fig(region='AFR', label='Africa')
-#    dalys_fig(income='Low income', label='Low-income')
-#    dalys_fig(income='High income', label='High-income')
+    dalys_fig(income='Low income', label='Low-income')
+    dalys_fig(income='High income', label='High-income')
 
 if fig2:
-#    alloc_fig(label='Global')
+    alloc_fig(label='Global')
     alloc_fig(label='platforms (Africa)', region='AFR', byplatform=True, logscale=True)
-#    alloc_fig(region='EUR', label='Europe')
+    alloc_fig(region='EUR', label='Europe')
     alloc_fig(region='AFR', label='disease area (Africa)', logscale=True)
-#    alloc_fig(income='Low income', label='Low-income')
-#    alloc_fig(income='High income', label='High-income')
+    alloc_fig(income='Low income', label='Low-income')
+    alloc_fig(income='High income', label='High-income')
 
 if fig3:
     common_interventions(region='AFR', income=None, byplatform=False, max_entries=100, entry=2, label='Africa (by disease area), USD1 pp')
