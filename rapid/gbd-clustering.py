@@ -6,7 +6,7 @@ from sklearn import cluster as sklc
 
 toplot = [
 #        'burdenmatrix',
-        'burdenmap',
+#        'burdenmap',
         'clustermaps',
         ]
 
@@ -52,11 +52,11 @@ order = pl.argsort(totalpercapita)
 for i,o in enumerate(order):
     print(f'{i+1:3}. {countries[o]:15}: {totalpercapita[o]: 6.3f}')
     
-dpc = datapercapita / datapercapita.max()
+dpc = datapercapita # / datapercapita.max()
 nd = normdata / normdata.max()
 
 # Do clustering
-clusters = [2,3,4,7,20,190]
+clusters = [2,3,4,7,195]
 clusterdata = sc.odict()
 for cluster in clusters:
     kmeans = sklc.KMeans(n_clusters=cluster, random_state=0).fit(dpc)
@@ -79,7 +79,6 @@ for cluster in clusters:
     sortedlabels = pl.zeros(ncountries)
     for c in range(ncountries):
         sortedlabels[c] = reverseorder[labels[c]]
-        sortedlabels[c] = burdenbylabel[labels[c]]
     clusterdata[str(cluster)] = sortedlabels
     
     
@@ -114,41 +113,18 @@ remapping = sc.odict({
          'New Caledonia': 'France',
         })
 
-def apply_data(world, input_data):
-    count = 0
-    mismatchcount = 0
-    matched = []
-    unmatched = []
+def apply_data(world, input_data, minval, maxval):
     for index, row in world.iterrows():
-#        if row['name'] in mapcountries+remapping.keys():
         if row['name'] in remapping.keys():
             thiscountry = remapping[row['name']]
         else:
             thiscountry = row['name']
         c = mapcountries.index(thiscountry)
         world.at[index, 'plotvar'] = input_data[c]
-        if row['name'] == 'Fr. S. Antarctic Lands':
-            world.at[index, 'plotvar'] = 0.99
-        if row['name'] == 'N. Cyprus':
-            world.at[index, 'plotvar'] = 0.01
-        
-        matched.append(row['name'])
-        count += 1
-#        else:
-#            print(row['name'])
-#            if thiscountry == 'Fr. S. Antarctic Lands':
-#                world.at[index, 'plotvar'] = 0.99
-#            if thiscountry == 'N. Cyprus':
-#                world.at[index, 'plotvar'] = 0.01
-#            unmatched.append(row['name'])
-#            mismatchcount += 1
-    
-#    print(f'Matched {count} of {len(mapcountries)}')
-#    print('Mismatches 1:')
-#    print(sorted(list(set(mapcountries)-set(matched))))
-#    print('Mismatches 2:')
-#    print(sorted(list(set(unmatched))))
-    
+        if minval is not None and row['name'] == 'Fr. S. Antarctic Lands': # Just for plotting to get the color bar right
+            world.at[index, 'plotvar'] = minval
+        if maxval is not None and row['name'] == 'N. Cyprus':
+            world.at[index, 'plotvar'] = maxval
     return world
 
 
@@ -163,19 +139,33 @@ if 'burdenmatrix' in toplot:
 
 # Plot as map
 if 'burdenmap' in toplot:
-    world = apply_data(world, datapercapita[:,-1])
+    world = apply_data(world, datapercapita[:,-1], minval=0, maxval=1)
     fig = pl.figure(figsize=(40,18))
     ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
     world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True);
     pl.show()
     
 if 'clustermaps' in toplot:
-    for key,cdata in clusterdata.items():
-        world = apply_data(world, cdata)
+    clusterdalys = sc.dcp(clusterdata)
+    for key,cdata in clusterdalys.items():
+        for c in range(ncountries):
+            cdata[c] = burdenbylabel[int(cdata[c])]
+        world = apply_data(world, cdata, minval=0, maxval=datapercapita.max())
         fig = pl.figure(figsize=(40,18))
         ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
         world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula', legend=True);
         pl.title(f'Clusters = {key}')
+    
+    clusterlabels = sc.dcp(clusterdata)
+    for key,cdata in clusterlabels.items():
+        world = apply_data(world, cdata, minval=None, maxval=None)
+        fig = pl.figure(figsize=(40,18))
+        ax = fig.add_axes([0.01, 0.01, 1.0, 1.0])
+        world.plot(ax=ax, column='plotvar', edgecolor=(0.5,0.5,0.5), cmap='parula');
+        pl.title(f'Clusters = {key}')
+    
+    
+    
     pl.show()
 
 print('Done.')
