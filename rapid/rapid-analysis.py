@@ -25,6 +25,7 @@ P.loadinterventions(filename='rapid_interventions.xlsx')
 ninterventions = P.intervsets[0].data.nrows
 
 # Load data
+missing_data_adjustment_factor = 2
 sc.heading('Loading data...')
 for c,country in enumerate(country_data['name'].tolist()):
     print(f'  Working on {country}...')
@@ -51,8 +52,8 @@ for c,country in enumerate(country_data['name'].tolist()):
                 df.rmrows(missing_inds)
             elif missing_data == 'assumption':
                 for ind in missing_inds:
-                    df['Unit cost', ind] = unitcosts.mean() # 10000.0 # WARNING, completely arbitrary!
-                    df['ICER', ind] = icers.mean() # 660000
+                    df['Unit cost', ind] = missing_data_adjustment_factor*unitcosts.mean() # 10000.0 # WARNING, completely arbitrary!
+                    df['ICER', ind] = missing_data_adjustment_factor*icers.mean() # 660000
         
         D[country].interv().data[key] *= this_factor/baseline_factor
 
